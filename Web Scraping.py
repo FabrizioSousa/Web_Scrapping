@@ -8,13 +8,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 import pandas as pd
+import sys
 
 class PegarEmails:
 
     def __init__(self):
         self.TIME_SLEEP = 5
         self.PAGINAS_PASSADAS = 0
-        self.LOC_EMAIL = 0
         self.array_email = []
         self.SITE_LINK = "https://acheumarquiteto.caubr.gov.br"
         self.SITE_MAP = {
@@ -52,7 +52,6 @@ class PegarEmails:
         self.PAGINAS_PASSADAS = self.PAGINAS_PASSADAS+1 
         print(str(self.PAGINAS_PASSADAS) + "º página(s)" )
         self.driver.execute_script("window.scrollBy(0,300)");
-        Site_scrap.mudar_pagina()
         time.sleep(2)
         Site_scrap.abrir_tr()
         
@@ -60,11 +59,17 @@ class PegarEmails:
     def mudar_pagina(self):
         self.driver.execute_script("window.scrollBy(0,document.body.scrollHeight)")
         time.sleep(2)
-        self.driver.find_element_by_xpath(self.SITE_MAP["buttons"]["botao_avancar"]["xpath"]).click()     
-        time.sleep(10)
-        self.PAGINAS_PASSADAS = self.PAGINAS_PASSADAS+1 
-        print(str(self.PAGINAS_PASSADAS) + "º página(s)" )
-        Site_scrap.abrir_tr()
+        try:
+            self.driver.find_element_by_xpath(self.SITE_MAP["buttons"]["botao_avancar"]["xpath"]).click()     
+            time.sleep(10)
+            self.PAGINAS_PASSADAS = self.PAGINAS_PASSADAS+1 
+            print(str(self.PAGINAS_PASSADAS) + "º página(s)" )
+            Site_scrap.abrir_tr()  
+        except NoSuchElementException:
+            self.df = pd.DataFrame({'email': self.array_email})
+            self.df.to_csv("Csv_Emails.csv",mode='a', index=False)
+            time.sleep(10)
+            sys.exit()
         
     def abrir_tr(self):
         x=1
@@ -74,9 +79,9 @@ class PegarEmails:
                 self.driver.find_element_by_xpath(objeto).click()     
                 time.sleep(1)
                 try:                    
-                    email = self.driver.find_element_by_partial_link_text("@")
-                    self.array_email.append(email.get_attribute('innerHTML'))
-                    self.LOC_EMAIL = self.LOC_EMAIL +1
+                    email = self.driver.find_element_by_partial_link_text("@").get_attribute('innerHTML')
+                    self.array_email.append(email)
+                    print(email)
                     time.sleep(1)
                     self.driver.find_element_by_xpath(objeto).click()
                     time.sleep(1)
@@ -89,13 +94,17 @@ class PegarEmails:
                     x = x+2
             time.sleep(1)  
             self.df = pd.DataFrame({'email': self.array_email})
-            self.df.head()
+            self.df.to_csv("Csv_Emails.csv",mode='a', index=False)
             Site_scrap.mudar_pagina()
         except NoSuchElementException:
             self.df = pd.DataFrame({'email': self.array_email})
-            print(self.df)
+            self.df.to_csv("Csv_Emails.csv",mode='a', index=False)
             time.sleep(1)
             Site_scrap.mudar_pagina()
+
+              
+    def pegar_max_paginas(self):
+        x=1        
             
 Site_scrap = PegarEmails()
 Site_scrap.abrir_site()
